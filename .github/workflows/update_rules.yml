@@ -1,0 +1,41 @@
+name: Auto Update Rules
+
+on:
+  schedule:
+    # 每天 UTC 18:00（北京时间凌晨 2 点）执行一次
+    - cron: '0 18 * * *'
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Download latest rules
+        run: |
+          echo "拉取 Loyalsoldier 直连规则..."
+          curl -sL https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/direct.txt -o rules/direct.txt
+          
+          echo "拉取 Loyalsoldier 代理规则..."
+          curl -sL https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/proxy.txt -o rules/proxy.txt
+          
+          echo "拉取广告拦截规则..."
+          curl -sL https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/reject.txt -o rules/reject.txt
+          
+          # （可选）如果你想用 blackmatrix7 的规则，可以替换上面的 URL
+
+      - name: Check for changes
+        id: git-check
+        run: |
+          git diff --exit-code rules/ || echo "::set-output name=modified::true"
+
+      - name: Commit and push if changed
+        if: steps.git-check.outputs.modified == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add rules/
+          git commit -m "chore: 自动更新规则集 ($(date +'%Y-%m-%d'))"
+          git push
