@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-03T16:24:27+00:00",
+  "generated_at": "2026-11-03T16:28:33+00:00",
   "source": {
     "repo": "MetaCubeX/meta-rules-dat",
     "branch": "meta",
@@ -30,6 +30,6 @@
     }
   },
   "meta": {
-    "sha256": "d15a9d7db7e478cb1af2b8be688210d721e42762f9a14a70011637c2a6aa5ff9"
+    "sha256": "35cd6d8d2f3e51959d85e91ec58ef410f4ee7efea69feeb54d0b1dceb5a2dc37"
   }
 }
