@@ -1,1 +1,26 @@
-
+{
+  "$schema": "./_schema.json",
+  "id": "vless-ws-tls",
+  "kind": "transport",
+  "enabled": true,
+  "name": null,
+  "protocol": "vless",
+  "transport": "ws",
+  "security": "tls",
+  "params": {
+    "server": "__NODE_SERVER__",
+    "port": "__NODE_PORT__",
+    "uuid": "__NODE_UUID__",
+    "sni": "__NODE_HOST__",
+    "path": "__NODE_PATH__",
+    "host": "__NODE_HOST__",
+    "client_fingerprint": "chrome"
+  },
+  "compat": {
+    "clash_mihomo": "1.19.0",
+    "xray": "1.8.0",
+    "singbox": "1.8.0",
+    "universal_uri": "2023-03-19"
+  },
+  "notes": "VLESS + WebSocket + TLS。这是本项目的主力形态：Cloudflare 边缘 IP 由优选 IP 机制批量填充，每个 IP 生成一个节点。\n\nserver 用 __NODE_SERVER__ 占位符——它表示「由优选 IP 机制填充的实际 server」，加载阶段解析为空串，由 cf_uploader 在生成每个 IP 节点时替换。\n\nsni/host 用 __NODE_HOST__ 占位符：它们是**真实域名**（Cloudflare 按 SNI 路由站点，SNI 与 Host 不一致直接 403）。"
+}

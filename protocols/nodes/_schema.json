@@ -1,0 +1,104 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "cf-sub-system/protocol-spec",
+  "title": "协议规格文件",
+  "description": "config/protocols/nodes/*.json 的校验规则。由 cf_protocols.py 的内置校验器执行（不依赖 jsonschema 库——项目运行时零第三方依赖，见约束 42）。",
+  "type": "object",
+  "required": ["id", "kind", "protocol", "transport", "security", "params"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "规格的唯一标识，manifest.json 用它引用。"
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["transport", "standalone"],
+      "description": "transport = 传输层模板（配合优选 IP 批量生成节点）；standalone = 独立节点（固定服务端，不参与优选 IP 机制）。"
+    },
+    "enabled": {
+      "type": "boolean",
+      "description": "是否启用。缺省视为 true。"
+    },
+    "name": {
+      "type": ["string", "null"],
+      "description": "节点名。standalone 必填；transport 为 null 表示由优选 IP 的标签动态生成。"
+    },
+    "protocol": {
+      "type": "string",
+      "enum": ["vless", "vmess", "trojan", "shadowsocks", "hysteria2", "tuic", "wireguard"],
+      "description": "协议层。与传输层、安全层正交。"
+    },
+    "transport": {
+      "type": "string",
+      "enum": ["ws", "grpc", "http", "xhttp", "tcp", "quic"],
+      "description": "传输层。"
+    },
+    "security": {
+      "type": "string",
+      "enum": ["none", "tls", "reality"],
+      "description": "安全层。reality 需要 reality-opts。"
+    },
+    "params": {
+      "type": "object",
+      "description": "协议参数。值可以是 __NODE_UUID__ / __NODE_HOST__ / __NODE_PORT__ / __NODE_PATH__ 四个占位符之一，运行时从 settings.json 的 node 段注入。",
+      "properties": {
+        "server": { "type": "string" },
+        "port": { "type": "integer" },
+        "uuid": { "type": "string" },
+        "sni": { "type": "string" },
+        "public_key": { "type": "string" },
+        "short_id": { "type": "string" },
+        "public_key_quantum": {
+          "type": ["string", "null"],
+          "description": "ML-DSA-65 抗量子签名公钥（分享链接参数 pqv）。仅走 URI 侧——mihomo 的 RealityOptions 无对应字段，写进 Clash YAML 会被静默忽略。留空表示不启用。"
+        },
+        "spider_x": {
+          "type": ["string", "null"],
+          "description": "spiderX 伪装路径（分享链接参数 spx）。仅走 URI 侧——mihomo 的 RealityOptions 无对应字段。留空表示不启用。"
+        },
+        "flow": { "type": "string" },
+        "path": { "type": "string" },
+        "host": { "type": "string" },
+        "client_fingerprint": { "type": "string" },
+        "mode": { "type": "string" },
+        "service_name": { "type": "string" },
+        "alpn": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "support_x25519mlkem768": { "type": "boolean" }
+      }
+    },
+    "settings_section": {
+      "type": "string",
+      "description": "settings.json 里对应的段名（如 'reality'）。该段缺失或 enabled 未开启时，本规格不生成任何节点——'不配置就不出现'。"
+    },
+    "settings_overrides": {
+      "type": "object",
+      "description": "settings 段内的键 -> 规格内的目标路径的映射。目标路径是点分路径（'params.server'）；特殊值 'transport' 与 'name' 分别映射到顶层对应字段。只有 settings 里实际存在该键时才覆盖，缺失的键保留规格默认值。",
+      "additionalProperties": { "type": "string" }
+    },
+    "required_params": {
+      "type": "array",
+      "description": "必需参数的名单（params 里的键）。任一为空则跳过该节点并告警——缺字段的节点必然连不上。",
+      "items": { "type": "string" }
+    },
+    "compat": {
+      "type": "object",
+      "description": "最低客户端版本要求。渲染前校验，低于要求的节点被跳过（阶段 D）。",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "notes": {
+      "type": "string",
+      "description": "人类可读的说明。不参与渲染。"
+    }
+  }
+}

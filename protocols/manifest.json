@@ -1,1 +1,16 @@
-
+{
+  "schema_version": 1,
+  "description": "协议规格清单。每个条目引用 config/protocols/nodes/ 下的一个规格文件。\n\nkind=transport 的规格是**模板**：由优选 IP 机制批量填充（每个优选 IP 生成一个节点）。\nkind=standalone 的规格是**独立节点**：走固定服务端入口，在环 5（纯域名兜底）之后追加。\n\n本列表的顺序 = standalone 节点的追加顺序。",
+  "specs": [
+    {
+      "id": "vless-ws-tls",
+      "file": "nodes/vless-ws-tls.json",
+      "enabled": true
+    },
+    {
+      "id": "vless-reality-vision",
+      "file": "nodes/vless-reality-vision.json",
+      "enabled": true
+    }
+  ]
+}

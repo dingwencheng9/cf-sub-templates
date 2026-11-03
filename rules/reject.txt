@@ -1,0 +1,126 @@
+# ============================================================
+# 分流规则集 · REJECT 层（广告 / 追踪拦截）
+# ============================================================
+# 每行一个域名，`+.` 前缀表示匹配该域名及其所有子域。
+#
+# 收录标准：只收**纯广告/追踪**域名，不收任何正常业务域名。
+# 误收的代价是用户访问不到正常站点（REJECT 不会回退）。
+#
+# 维护时用 `+.` 前缀表达子域匹配——写 `doubleclick.net` 只能拦
+# 住裸域，写 `+.doubleclick.net` 才能连 `stats.g.doubleclick.net`
+# 一起拦住。实测广告请求大量走子域，只写裸域等于没拦。
+
+# ---------- Google 广告与分析 ----------
++.doubleclick.net
++.googleadservices.com
++.googlesyndication.com
++.google-analytics.com
++.analytics.google.com
++.adservice.google.com
++.pagead2.googlesyndication.com
++.partner.googleadservices.com
++.admob.com
++.adsense.com
++.adsmoloco.com
++.amazon-adsystem.com
+
+# ---------- 微软广告 ----------
++.clarity.ms
++.ads.microsoft.com
++.delivery.mp.microsoft.com
+
+# ---------- 社交平台追踪 ----------
++.connect.facebook.net
++.analytics.tiktok.com
++.ads.tiktok.com
++.business-api.tiktok.com
++.analytics.twitter.com
++.ads-twitter.com
++.ads.linkedin.com
++.snapchat.ads.yahoo.com
++.analytics.yahoo.com
+
+# ---------- 通用广告平台 ----------
++.adsrvr.org
++.adnxs.com
++.advertising.com
++.criteo.com
++.casalemedia.com
++.openx.net
++.pubmatic.com
++.rubiconproject.com
++.scorecardresearch.com
++.taboola.com
++.outbrain.com
++.quantserve.com
++.doubleverify.com
++.ads.yieldmo.com
++.contextweb.com
++.bidswitch.net
++.smartadserver.com
++.adform.net
++.sharethrough.com
++.teads.tv
++.media.net
++.33across.com
++.eyeota.net
++.improvedigital.com
++.lijit.com
++.gumgum.com
++.districtm.io
++.adsafeprotected.com
++.adsunflower.com
+
+# ---------- 移动端广告 SDK ----------
++.ads.mopub.com
++.applovin.com
++.unityads.unity3d.com
++.vungle.com
++.chartboost.com
++.inmobi.com
++.startappservice.com
++.fyber.com
++.adcolony.com
++.supersonicads.com
++.ironsource.mobi
++.mintegral.com
++.pangle.io
+
+# ---------- 网站统计与行为分析 ----------
++.hotjar.com
++.hotjar.io
++.fullstory.com
++.mixpanel.com
++.segment.io
++.segment.com
++.amplitude.com
++.heap.io
++.kissmetrics.com
++.matomo.cloud
++.newrelic.com
++.nr-data.net
++.optimizely.com
++.vwo.com
++.kissflow.io
++.clarity.io
++.mouseflow.com
++.luckyorange.com
++.crazyegg.com
++.inspectlet.com
++.smartlook.com
++.logrocket.com
++.datadoghq.com
++.sentry.io
++.bugsnag.com
++.cloudflareinsights.com
++.perfdrive.com
++.speedcurve.com
+
+# ---------- 推送 SDK（可选，取消即恢复） ----------
++.onesignal.com
++.pushwoosh.com
++.braze.com
++.appboy.com
++.airship.com
++.urbanairship.com
++.leanplum.com

@@ -1,0 +1,60 @@
+{
+  "$schema": "./_schema.json",
+  "id": "vless-reality-vision",
+  "kind": "standalone",
+  "enabled": true,
+  "name": "CF-Reality-Vision",
+  "protocol": "vless",
+  "transport": "tcp",
+  "security": "reality",
+  "settings_section": "reality",
+  "settings_overrides": {
+    "server": "params.server",
+    "port": "params.port",
+    "sni": "params.sni",
+    "public_key": "params.public_key",
+    "short_id": "params.short_id",
+    "flow": "params.flow",
+    "network": "transport",
+    "path": "params.path",
+    "host": "params.host",
+    "client_fingerprint": "params.client_fingerprint",
+    "alpn": "params.alpn",
+    "support_x25519mlkem768": "params.support_x25519mlkem768",
+    "public_key_quantum": "params.public_key_quantum",
+    "spider_x": "params.spider_x",
+    "name": "name"
+  },
+  "required_params": [
+    "server",
+    "sni",
+    "public_key",
+    "short_id"
+  ],
+  "params": {
+    "server": "",
+    "port": 443,
+    "uuid": "__NODE_UUID__",
+    "sni": "",
+    "public_key": "",
+    "short_id": "",
+    "flow": "xtls-rprx-vision",
+    "path": "",
+    "host": "",
+    "client_fingerprint": "chrome",
+    "alpn": [
+      "h2",
+      "http/1.1"
+    ],
+    "support_x25519mlkem768": true,
+    "public_key_quantum": "",
+    "spider_x": ""
+  },
+  "compat": {
+    "clash_mihomo": "1.19.0",
+    "xray": "1.8.0",
+    "singbox": "1.8.0",
+    "universal_uri": "2023-03-19"
+  },
+  "notes": "VLESS + REALITY + XTLS Vision（tcp 传输）。独立于优选 IP 机制：走固定服务端入口，不扫网段、不测速、不进 IP 池、不带时段标签。\n\nserver/sni/public_key/short_id 是**服务端凭据**，规格文件里留空，由 settings.json 的 reality 段提供——因此规格文件不含任何凭据，可以安全进版本库。\n\nsupport_x25519mlkem768 默认 true：mihomo 的默认值是 false（源码 component/tls/reality.go:58），而服务端 REALITY 只接受 X25519MLKEM768 混合密钥交换。不开这一项 = 100% 鉴权失败 = 连接超时。上游 v1.19.33 的默认值依然是 false，升级版本救不了，必须由配置显式打开。\n\npublic_key_quantum（ML-DSA-65 抗量子签名公钥，对应分享链接参数 pqv）与 spider_x（spiderX 伪装路径，对应参数 spx）**只走分享链接（URI）侧，不写进 Clash YAML**：mihomo 的 RealityOptions 只有 public-key / short-id / support-x25519mlkem768 三个字段（上游 Meta 分支 adapter/outbound/reality.go），没有量子公钥与 spiderX 的对应项；写进 YAML 会被静默忽略，形成\"看起来启用、实际不生效\"的假象。URI 侧则安全——mihomo 的 common/convert/v.go 只 query.Get 它认识的键，多余参数无害；而 Xray 系客户端（v2rayN / v2rayNG）认 pqv / spx 并会真正启用（Xray 客户端字段 mldsa65Verify / spiderX，分享链接规范见 XTLS/Xray-core#716）。\n\n留空表示不启用，符合\"不配置就不出现\"契约。"
+}

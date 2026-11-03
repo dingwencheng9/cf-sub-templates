@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "source": {
+    "file": "1a19b36d0ed.yaml",
+    "origin": "桔子云订阅（sub-store）导出的 Clash 配置",
+    "note": "上游配置本身有两个缺陷：dns 键重复（dns: false 后紧跟 dns:）、PROCESS-NAME 规则大量重复。导入时只取其规则集的域名部分。"
+  },
+  "excluded": {
+    "apple": "本项目约束 76：Apple 生态必须直连，已有显式规则且经实测（延迟 13 倍 + 流量成本）",
+    "streaming": "本项目约束 77：所有节点同一出口 IP（74.211.101.4），流媒体分流对解锁能力无影响",
+    "process_name": "上游 PROCESS-NAME 是 macOS/Windows 进程名规则，与本项目的服务端场景无关",
+    "arpa": "反向解析域名（in-addr.arpa / ip6.arpa），不是真实分流需求",
+    "lan_captive": "局域网与 captive portal 由 dns.fake-ip-filter 承担（约束 80）",
+    "junk": "哈希样式 CDN 随机子域、'-xxx-' 垃圾条目、纯数字异常域名"
+  },
+  "stats": {
+    "direct": 1167,
+    "proxy": 3116,
+    "reject": 101
+  },
+  "files": {
+    "direct.txt": {
+      "count": 1167,
+      "sha256_16": "fdcab8be92e94e54"
+    },
+    "proxy.txt": {
+      "count": 3116,
+      "sha256_16": "dc961cbb210423a0"
+    },
+    "reject.txt": {
+      "count": 101,
+      "sha256_16": "f3e313722c9032a3",
+      "note": "广告/追踪拦截层。人工维护，无上游来源。"
+    }
+  },
+  "measured": {
+    "note": "GEOIP,CN 带 no-resolve 时在 fake-ip 模式下永不命中——这是导入本规则集的根因",
+    "evidence": "隔离实例实测：www.163.com / www.bilibili.com 等 5 个国内域名共 26 次请求，命中规则统计 100% 为 Match/（MATCH 兜底），GeoIP cn 命中 0 次",
+    "correction_2026_11_03": "三组对照实测进一步确认：直接原因是 no-resolve 让 GEOIP 规则跳过域名解析、直接拿 fake-ip（198.18.x.x）比对。最终方案是 GEOIP,CN 排在规则集之后、MATCH 之前且不带 no-resolve，专职兜底裸 IP 连接（实测 180.101.49.44 → GeoIP(cn) using DIRECT）。详见 CLAUDE.md 约束 153。"
+  }
+}
