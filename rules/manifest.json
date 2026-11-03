@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-03T16:24:27+00:00",
+  "source": {
+    "repo": "MetaCubeX/meta-rules-dat",
+    "branch": "meta",
+    "commit": "ea0125e318b019267a12ff8294689e2f997991a9",
+    "layout": {
+      "geo-lite": "geo-lite/geosite/{category}.list",
+      "ads": "geo/geosite/category-ads-all.list"
+    },
+    "note": "上游不提供 checksum 文件；本文件记录的 commit 为实际拉取到的上游快照，各层 sha256 为本地产物校验值。"
+  },
+  "files": {
+    "direct.txt": {
+      "sha256": "801208797ceabed558933258901af697016563624f898e8296cddde2974527c8",
+      "count": 5107
+    },
+    "proxy.txt": {
+      "sha256": "a46d41f66442bbf4e99040c1e0bb492aef79a4fae771abf2cc0367ea966158ce",
+      "count": 1793
+    },
+    "reject.txt": {
+      "sha256": "8f2cd43fdaed75aa3a7b9fb8b86f803180e0f8d5b63e9c6bc878d4adc5ec7e99",
+      "count": 900
+    },
+    "fake_ip_filter.txt": {
+      "sha256": "2ccf167f8a610eec1ded2ceb4d4d87b8c84aa50cb58c42fb7b4d4fc96058ac14",
+      "count": 36
+    }
+  },
+  "meta": {
+    "sha256": "d15a9d7db7e478cb1af2b8be688210d721e42762f9a14a70011637c2a6aa5ff9"
+  }
+}
