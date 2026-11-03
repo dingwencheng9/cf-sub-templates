@@ -14,9 +14,8 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      # 🔥 修复：升级到 v4 解决 Node 20 警告
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download latest rules
         run: |
