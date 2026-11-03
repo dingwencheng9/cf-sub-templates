@@ -6,7 +6,7 @@ on:
     - cron: '0 18 * * *'
   workflow_dispatch: # 允许手动触发
 
-# 🔥 核心修复：显式赋予 Token 写入权限，解决 exit code 128
+# 显式赋予 Token 写入权限，否则 git push 会以 exit code 128 失败
 permissions:
   contents: write
 
@@ -30,6 +30,7 @@ jobs:
 
       # ------------------------------------------------------------------
       # 上游溯源：解析 meta 分支的 commit sha 并 pin 住。
+      #
       # 上游不提供任何 checksum 文件，因此"下载到的内容是否被篡改"
       # 无法靠上游校验——唯一可靠的办法是把 commit sha 记进 meta.json，
       # 让本地产物的每一行都能追溯到具体的上游快照。
@@ -50,10 +51,13 @@ jobs:
 
       # ------------------------------------------------------------------
       # 拉取上游分类文件。
-      # 路径实测：
+      #
+      # 路径实测（不是推测）：
       #   geo-lite/geosite/{cn,apple,applemusic,bilibili,
       #                    proxy,google,youtube,github,openai,private}.list
-      #   geo/geosite/category-ads-all.list   ← ads 分类只在 geo/ 下
+      #   geo/geosite/category-ads-all.list   ← ads 分类只在 geo/ 下，
+      #                                            geo-lite/ 里没有
+      #
       # 拉取失败即整体失败：半套规则集比旧规则集更糟。
       # ------------------------------------------------------------------
       - name: Fetch upstream rule files
@@ -81,261 +85,25 @@ jobs:
                    proxy google youtube github openai private; do
             fetch "geo-lite/geosite/${c}.list" ".cache/rules/${c}.list"
           done
-          fetch "geo/geosite/category-ads-all.list"".cache/rules/category-ads-all.list"
+          fetch "geo/geosite/category-ads-all.list" ".cache/rules/category-ads-all.list"
 
           echo "已拉取 $(ls -1 .cache/rules | wc -l) 个上游分类文件"
 
       # ------------------------------------------------------------------
-      # 组装 + 校验。全部产物先写到 .cache/out/，校验全过才落到 rules/。
-      # 校验不过 = 整个 job 失败 = rules/ 保持旧内容不变。
+      # 组装 + 校验。
+      #
+      # 逻辑放在 scripts/compose_rules.py 而不是内联 heredoc：
+      # 有分支与阈值的校验逻辑必须能在 CI 之外复现验证（改坏了不能
+      # 只靠等 CI 跑一次才知道）。脚本以非零码退出 = 校验不过 =
+      # rules/ 保持旧内容不变。
       # ------------------------------------------------------------------
       - name: Compose and validate rule layers
         env:
           UPSTREAM_SHA: ${{ steps.upstream.outputs.sha }}
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          import hashlib, json, os, re, sys
-          from datetime import datetime, timezone
-          from pathlib import Path
-
-          CACHE = Path(".cache/rules")
-          OUT   = Path(".cache/out")
-          OUT.mkdir(parents=True, exist_ok=True)
-
-          DIRECT_CATS = ["cn", "apple", "applemusic", "bilibili"]
-          PROXY_CATS  = ["proxy", "google", "youtube", "github", "openai"]
-          REJECT_CATS = ["category-ads-all"]
-          FAKEIP_CATS = ["private"]
-
-          UPSTREAM_SHA = os.environ.get("UPSTREAM_SHA", "unknown")
-
-          # 哈希样式 CDN 随机子域：0gr4uqmtt8y41hcjsgrzdrc31.ourdvsss.com
-          JUNK = re.compile(r"^[a-z0-9]{20,}\.[a-z0-9.-]+$")
-
-          def valid_expr(expr: str) -> bool:
-              """校验 mihomo DOMAIN 表达式。
-
-              与本地 cf_rules._is_valid_expression 的**放宽版**保持一致：
-              额外接受 "+.cn" / "+.ms" 这类单标签 TLD（wildcard 前缀 + 单 label）。
-              纯裸单标签（如 "cn"）仍拒绝——那是主机名不是 TLD 表达式。
-              """
-              if not expr or len(expr) > 128:
-                  return False
-              if any(ch in expr for ch in " /\t:@?#"):
-                  return False
-              body, wildcard = expr, False
-              for prefix in ("+.", "*."):
-                  if body.startswith(prefix):
-                      body, wildcard = body[len(prefix):], True
-                      break
-              if not body:
-                  return False
-              labels = body.split(".")
-              if any(not l or len(l) > 63 for l in labels):
-                  return False
-              if not all(c.isalnum() or c == "-" for c in "".join(labels)):
-                  return False
-              tld = labels[-1]
-              if not (tld.isalpha() and len(tld) >= 2):
-                  return False
-              if wildcard and len(labels) == 1:
-                  return True          # +.cn / +.ms —— 合法且必要
-              return len(labels) >= 2
-
-          def is_arpa(expr: str) -> bool:
-              body = expr
-              for prefix in ("+.", "*."):
-                  if body.startswith(prefix):
-                      body = body[len(prefix):]
-                      break
-              return body == "arpa" or body.endswith(".arpa")
-
-          def is_junk(expr: str) -> bool:
-              body = expr
-              for prefix in ("+.", "*."):
-                  if body.startswith(prefix):
-                      body = body[len(prefix):]
-                      break
-              return bool(JUNK.match(body))
-
-          def load(cat: str):
-              p = CACHE / f"{cat}.list"
-              if not p.exists():
-                  sys.exit(f"[FATAL] 缺少上游文件: {p}")
-              raw = p.read_text(encoding="utf-8")
-              items, bad, seen = [], [], set()
-              for i, line in enumerate(raw.splitlines(), 1):
-                  line = line.strip()
-                  if not line or line.startswith("#"):
-                      continue
-                  if "#" in line:
-                      line = line.split("#", 1)[0].strip()
-                      if not line:
-                          continue
-                  if not valid_expr(line):
-                      bad.append({"line": i, "expr": line})
-                      continue
-                  if line in seen:
-                      continue
-                  seen.add(line)
-                  items.append(line)
-              return items, bad
-
-          def sha256_of(path: Path) -> str:
-              return hashlib.sha256(path.read_bytes()).hexdigest()
-
-          # ---------- 读取上游 ----------
-          cat_items, cat_bad = {}, {}
-          for c in DIRECT_CATS + PROXY_CATS + REJECT_CATS + FAKEIP_CATS:
-              items, bad = load(c)
-              cat_items[c], cat_bad[c] = items, bad
-
-          # ---------- 剔除项（带理由，必须留痕）----------
-          stats_excluded = {"arpa": 0, "junk": 0, "invalid": 0, "duplicate": 0}
-
-          def clean(items):
-              out, seen = [], set()
-              for e in items:
-                  if is_arpa(e):
-                      stats_excluded["arpa"] += 1
-                      continue
-                  if is_junk(e):
-                      stats_excluded["junk"] += 1
-                      continue
-                  if e in seen:
-                      stats_excluded["duplicate"] += 1
-                      continue
-                  seen.add(e)
-                  out.append(e)
-              return out
-
-          for c in cat_items:
-              cat_items[c] = clean(cat_items[c])
-          for c, bad in cat_bad.items():
-              stats_excluded["invalid"] += len(bad)
-
-          def union(cats):
-              out, seen = [], set()
-              for c in cats:
-                  for e in cat_items[c]:
-                      if e not in seen:
-                          seen.add(e)
-                          out.append(e)
-              return out
-
-          direct = union(DIRECT_CATS)
-          proxy  = union(PROXY_CATS)
-          reject = union(REJECT_CATS)
-          fakeip = union(FAKEIP_CATS)
-
-          # ---------- 层间冲突消解（显式优先级，不靠渲染顺序的偶然结果）----------
-          # 优先级：reject > direct > proxy
-          # 与本项目 mihomo 渲染顺序一致（约束 155：reject → direct → proxy）。
-          reject_set = set(reject)
-
-          hit = [e for e in direct if e in reject_set]
-          direct = [e for e in direct if e not in reject_set]
-          hit += [e for e in proxy if e in reject_set]
-          proxy = [e for e in proxy if e not in reject_set]
-          reject_overlaps = hit
-
-          direct_set = set(direct)
-          conflicts = [e for e in proxy if e in direct_set]
-          proxy = [e for e in proxy if e not in direct_set]
-
-          # ---------- 校验（不过就整个 job 失败，rules/ 保持旧内容）----------
-          MIN_COUNTS = {"direct": 1000, "proxy": 500, "reject": 100}
-          for layer, minimum in MIN_COUNTS.items():
-              got = len({"direct": direct, "proxy": proxy, "reject": reject}[layer])
-              if got < minimum:
-                  sys.exit(f"[FATAL] {layer} 层只有 {got} 条，低于下限 {minimum}——上游可能异常")
-          if reject_overlaps and len(reject_overlaps) > len(direct) * 0.05:
-              sys.exit(f"[FATAL] reject 层误伤 direct 层 {len(reject_overlaps)} 条（>5%）——上游分类可能错位")
-          if set(direct) & set(proxy):
-              sys.exit("[FATAL] direct 与 proxy 仍有交集——冲突消解失效")
-
-          # ---------- 落盘到 .cache/out ----------
-          def write_layer(name, items):
-              p = OUT / name
-              p.write_text("\n".join(items) + "\n", encoding="utf-8")
-              return p
-
-          files = {
-              "direct.txt": write_layer("direct.txt", direct),
-              "proxy.txt":  write_layer("proxy.txt", proxy),
-              "reject.txt": write_layer("reject.txt", reject),
-              "fake_ip_filter.txt": write_layer("fake_ip_filter.txt", fakeip),
-          }
-
-          layers = {
-              "direct": {"categories": DIRECT_CATS, "count": len(direct),
-                         "sha256": sha256_of(files["direct.txt"])},
-              "proxy":  {"categories": PROXY_CATS,  "count": len(proxy),
-                         "sha256": sha256_of(files["proxy.txt"])},
-              "reject": {"categories": REJECT_CATS, "count": len(reject),
-                         "sha256": sha256_of(files["reject.txt"])},
-              "fake_ip_filter": {"categories": FAKEIP_CATS, "count":len(fakeip),
-                                 "sha256": sha256_of(files["fake_ip_filter.txt"])},
-          }
-
-          meta = {
-              "schema_version": 2,
-              "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-              "source": {
-                  "repo": "MetaCubeX/meta-rules-dat",
-                  "branch": "meta",
-                  "commit": UPSTREAM_SHA,
-                  "layout": {
-                      "geo-lite": "geo-lite/geosite/{category}.list",
-                      "ads": "geo/geosite/category-ads-all.list",
-                  },
-                  "note": "上游不提供 checksum 文件；本文件记录的 commit 为实际拉取到的上游快照，"
-                          "各层 sha256 为本地产物校验值。",
-              },
-              "layers": layers,
-              "excluded": {
-                  "arpa": "反向解析域名（in-addr.arpa / ip6.arpa），不是真实分流需求",
-                  "junk": "哈希样式 CDN 随机子域（长随机首段），上游 bilibili 等分类存在此类",
-                  "invalid": "未通过表达式校验的行（数量见 invalid_samples）",
-                  "reject_over_direct": "reject 层误伤 direct 层的条目（广告域名同时出现在国内分类）",
-              },
-              "excluded_stats": stats_excluded,
-              "invalid_samples": {c: b[:5] for c, b in cat_bad.items() if b},
-              "conflicts_resolved": {
-                  "priority": "reject > direct > proxy",
-                  "reject_over_direct": len(reject_overlaps),
-                  "reject_over_direct_samples": reject_overlaps[:20],
-                  "direct_over_proxy": len(conflicts),
-                  "direct_over_proxy_samples": conflicts[:20],
-              },
-              "totals": {
-                  "direct": len(direct),
-                  "proxy": len(proxy),
-                  "reject": len(reject),
-                  "fake_ip_filter": len(fakeip),
-              },
-          }
-          (OUT / "meta.json").write_text(
-              json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-
-          # manifest 最后写：它是"这套规则集是否完整"的唯一入口
-          manifest = {
-              "schema_version": 1,
-              "generated_at": meta["generated_at"],
-              "source": meta["source"],
-              "files": {name: {"sha256": sha256_of(p), "count": layers[name.split('.')[0]]["count"]}
-                        for name, p in files.items()},
-              "meta": {"sha256": sha256_of(OUT / "meta.json")},
-          }
-          (OUT / "manifest.json").write_text(
-              json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-
-          print("层规模:", json.dumps(meta["totals"], ensure_ascii=False))
-          print("剔除:", json.dumps(stats_excluded, ensure_ascii=False))
-          print("冲突消解: reject>direct =", len(reject_overlaps),
-                ", direct>proxy =", len(conflicts))
-          PY
+          RULE_CACHE=.cache/rules RULE_OUT=.cache/out \
+            python3 scripts/compose_rules.py
 
       # ------------------------------------------------------------------
       # 落到 rules/。只有上一步全部通过才会走到这里，
@@ -345,7 +113,8 @@ jobs:
       - name: Publish built rule files
         run: |
           set -euo pipefail
-          for f in direct.txt proxy.txt reject.txt fake_ip_filter.txt meta.json manifest.json; do
+          for f in direct.txt proxy.txt reject.txt fake_ip_filter.txt \
+                   meta.json manifest.json; do
             mv ".cache/out/$f" "rules/$f"
           done
           rm -rf .cache
@@ -386,25 +155,39 @@ jobs:
           echo "::error::连续 3 次推送失败"
           exit 1
 
+      # ------------------------------------------------------------------
+      # 汇报。always() 让它在失败时也跑——但**绝不能因此把 job 判失败**。
+      # 上一版这里读旧版 meta.json 的 m['totals'] 抛 KeyError，把 job
+      # 拉成 failed：主流程其实已经成功，失败的是汇报本身。
+      # 现在对 schema 做兼容，且汇报失败只记警告。
+      # ------------------------------------------------------------------
       - name: Summary
         if: always()
         run: |
-          set -euo pipefail
+          set -uo pipefail
           {
             echo "## 规则集更新"
             echo ""
             echo "| 层 | 条数 |"
             echo "|---|---|"
-            if [ -f rules/meta.json ]; then
-              python3 -c "
+            python3 - <<'PY' || echo "（本次未产出规则集统计）"
           import json
-          m = json.load(open('rules/meta.json'))
-          for k, v in m['totals'].items():
-              print(f\"| {k} | {v} |\")
-          print()
-          print('上游 commit: ' + m['source']['commit'])
-          "
-            else
-              echo "（本次未产出规则集）"
-            fi
+          from pathlib import Path
+
+          path = Path("rules/meta.json")
+          if not path.exists():
+              raise SystemExit(0)
+          meta = json.loads(path.read_text(encoding="utf-8"))
+
+          # schema v2 用 totals；v1 用 stats。两者都认，避免旧文件把汇报搞崩。
+          totals = meta.get("totals") or meta.get("stats") or {}
+          for layer, count in totals.items():
+              print(f"| {layer} | {count} |")
+
+          source = meta.get("source") or {}
+          commit = source.get("commit")
+          if commit:
+              print()
+              print(f"上游 commit: {commit}")
+          PY
           } >> "$GITHUB_STEP_SUMMARY"
