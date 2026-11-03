@@ -6,12 +6,17 @@ on:
     - cron: '0 18 * * *'
   workflow_dispatch: # 允许手动触发
 
+# 🔥 核心修复：显式赋予 Token 写入权限，解决 exit code 128
+permissions:
+  contents: write
+
 jobs:
   update:
     runs-on: ubuntu-latest
     steps:
+      # 🔥 修复：升级到 v4 解决 Node 20 警告
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Download latest rules
         run: |
@@ -23,13 +28,16 @@ jobs:
           
           echo "拉取广告拦截规则..."
           curl -sL https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/reject.txt -o rules/reject.txt
-          
-          # （可选）如果你想用 blackmatrix7 的规则，可以替换上面的 URL
 
       - name: Check for changes
         id: git-check
         run: |
-          git diff --exit-code rules/ || echo "::set-output name=modified::true"
+          # 🔥 修复：使用 $GITHUB_OUTPUT 代替废弃的 ::set-output
+          if git diff --exit-code rules/; then
+            echo "modified=false" >> $GITHUB_OUTPUT
+          else
+            echo "modified=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Commit and push if changed
         if: steps.git-check.outputs.modified == 'true'
