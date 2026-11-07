@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-06T22:48:06+00:00",
+  "generated_at": "2026-11-07T21:33:47+00:00",
   "source": {
     "repo": "MetaCubeX/meta-rules-dat",
     "branch": "meta",
-    "commit": "1fc5de325d54d3b77d6b86a1db900c5e48ae1003",
+    "commit": "7226545410c4dbb3854a5235803a26d86a298072",
     "layout": {
       "geo-lite": "geo-lite/geosite/{category}.list",
       "ads": "geo/geosite/category-ads-all.list"
@@ -21,8 +21,8 @@
       "count": 1793
     },
     "reject.txt": {
-      "sha256": "8f2cd43fdaed75aa3a7b9fb8b86f803180e0f8d5b63e9c6bc878d4adc5ec7e99",
-      "count": 900
+      "sha256": "2e42d810029da338481724452f9d2dfd22a714bf7e936c66348483b47e478cdf",
+      "count": 904
     },
     "fake_ip_filter.txt": {
       "sha256": "2ccf167f8a610eec1ded2ceb4d4d87b8c84aa50cb58c42fb7b4d4fc96058ac14",
@@ -30,6 +30,6 @@
     }
   },
   "meta": {
-    "sha256": "df6e217e0fd831524c503fe89fae382dcb6040d3ef3468f62bea839d51978ceb"
+    "sha256": "7d292a3278796ccbc7cfd66c52589c5d66d1961ab6c1e0c70a653ad71cfa2a6f"
   }
 }

@@ -1,10 +1,10 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-11-06T22:48:06+00:00",
+  "generated_at": "2026-11-07T21:33:47+00:00",
   "source": {
     "repo": "MetaCubeX/meta-rules-dat",
     "branch": "meta",
-    "commit": "1fc5de325d54d3b77d6b86a1db900c5e48ae1003",
+    "commit": "7226545410c4dbb3854a5235803a26d86a298072",
     "layout": {
       "geo-lite": "geo-lite/geosite/{category}.list",
       "ads": "geo/geosite/category-ads-all.list"
@@ -37,8 +37,8 @@
       "categories": [
         "category-ads-all"
       ],
-      "count": 900,
-      "sha256": "8f2cd43fdaed75aa3a7b9fb8b86f803180e0f8d5b63e9c6bc878d4adc5ec7e99"
+      "count": 904,
+      "sha256": "2e42d810029da338481724452f9d2dfd22a714bf7e936c66348483b47e478cdf"
     },
     "fake_ip_filter": {
       "categories": [
@@ -97,7 +97,7 @@
   "totals": {
     "direct": 5107,
     "proxy": 1793,
-    "reject": 900,
+    "reject": 904,
     "fake_ip_filter": 36
   }
 }
