@@ -1,10 +1,10 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-11-07T21:33:47+00:00",
+  "generated_at": "2026-11-08T21:47:55+00:00",
   "source": {
     "repo": "MetaCubeX/meta-rules-dat",
     "branch": "meta",
-    "commit": "7226545410c4dbb3854a5235803a26d86a298072",
+    "commit": "26cf4440307754d2c2f65cf2f0457c0ae814900f",
     "layout": {
       "geo-lite": "geo-lite/geosite/{category}.list",
       "ads": "geo/geosite/category-ads-all.list"
