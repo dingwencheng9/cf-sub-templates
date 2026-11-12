@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-12T00:11:18+00:00",
+  "generated_at": "2026-11-12T23:18:00+00:00",
   "source": {
     "repo": "MetaCubeX/meta-rules-dat",
     "branch": "meta",
-    "commit": "458e716abd80ff8c6aee2b7d15c4f94b20e9d279",
+    "commit": "a08d80c786668262381318e6c11cb13527a525e3",
     "layout": {
       "geo-lite": "geo-lite/geosite/{category}.list",
       "ads": "geo/geosite/category-ads-all.list"
@@ -30,6 +30,6 @@
     }
   },
   "meta": {
-    "sha256": "5a4240b1372d4282c6eaca76859d810f823eebaddf9783ed82ab1dbea0747b1b"
+    "sha256": "7e1b38a7a862756fa3c4b2c12d6b58536769fb35f1945cefbdc39acb375b0fd2"
   }
 }
